@@ -1,10 +1,12 @@
 ﻿using BiblioExpress.Application;
+using BiblioExpress.Application.Dtos;
 using BiblioExpress.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BiblioExpress.WebApi.Controllers
 {
-    [Route("api/[controller]")]
+
+    [Route("api/[controller]s")]
     [ApiController]
     public class LibroController : ControllerBase
     {
@@ -44,11 +46,6 @@ namespace BiblioExpress.WebApi.Controllers
 
         }
 
-        [HttpGet]
-        public ActionResult<List<Libro>> ConsultarLibros()
-       {
-            return libroServicee.ConsultarTodos();
-        }
 
         [HttpDelete("{isbn}")]
         public ActionResult<string> BorrarLibro(string isbn)
@@ -68,6 +65,49 @@ namespace BiblioExpress.WebApi.Controllers
     
 
         }
+
+
+        [HttpGet]
+        public ActionResult<List<Libro>> Consultar([FromQuery] FiltroConsulta filtro)
+        {
+            bool sinAutor = string.IsNullOrWhiteSpace(filtro.Autor);
+            bool sinGenero = string.IsNullOrWhiteSpace(filtro.Genero);
+
+            // Si ambos filtros están vacíos, retorna todos los libros.
+            if (sinAutor && sinGenero)
+            {
+                return Ok(libroServicee.ConsultarTodos());
+            }
+
+            // Comienza con la lista completa de libros.
+            var librosFiltrados = libroServicee.ConsultarTodos();
+
+            // Aplica el filtro de Autor si se proporcionó.
+            if (!sinAutor)
+            {
+                librosFiltrados = librosFiltrados
+                    .Where(libro => libro.Autor.Contains(filtro.Autor, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            // Aplica el filtro de Género si se proporcionó.
+            if (!sinGenero)
+            {
+                librosFiltrados = librosFiltrados
+                    .Where(libro => libro.Genero.Contains(filtro.Genero, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            if (librosFiltrados.Any())
+            {
+                return Ok(librosFiltrados);
+            }
+            else
+            {
+                return NotFound("No se encontraron libros con los filtros proporcionados");
+            }
+        }
+
 
 
     }
